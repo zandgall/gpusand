@@ -1,6 +1,6 @@
-# Quickwork
+# GPU Sand
 
-An OpenGL project framework intended to be incredibly easy and quick to set up and make a project with. It has limited functionality and utility, but provides the ability to start OpenGL and create a window within a line, along with the ability to quickly and easily load resources.
+This is a project that's a spiritual extension of [my cpu sand engine](https://github.com/zandgall/generic-sand), which instead makes use of the GPU in order to streamline the processing of rules quickly in parallel. 
 
 ## stb_image and Glad
 
@@ -12,7 +12,3 @@ The Glad's version I downloaded can be found [here](https://gen.glad.sh/#generat
 If you wish to use your own version of Glad, know that this project isn't designed for header only Glad. Download your glad files, and put them in the "third-party" folder. There should be a `src/gl.c`, `include/glad/gl.h`, and `include/KHR/khrplatform.h` included.
 
 This project also uses [stb_image](https://github.com/nothings/stb) in order to load images. All that is needed is `stb_image.h` inside the `third-party/include` directory.
-
-## Design
-
-This project is designed for testing and quickly prototyping programs or ideas. It therefore comes with several tools to make use in debugging, mostly in terms of graphics.
