@@ -131,6 +131,24 @@ int main(int args, char** argv) {
     glBindImageTexture(5, noise, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
     
     while(!qw::should_close) {
+
+        if(qw::mouse_left && qw::mouse_position.x >= 0 && qw::mouse_position.x < qw::width && qw::mouse_position.y >= 0 && qw::mouse_position.y < qw::height) {
+            while(glGetError());
+            int r;
+            glBindTexture(GL_TEXTURE_2D, wrld.color);
+            uint8_t painted_color[4];
+            painted_color[0] = 255;
+            painted_color[1] = 0;
+            painted_color[2] = 0;
+            painted_color[3] = 255;
+            glTexSubImage2D(GL_TEXTURE_2D, 0, (int)(qw::mouse_position.x*256/qw::width), (int)(qw::mouse_position.y*256/qw::height), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, painted_color);
+            uint32_t painted_dead[1];
+            painted_dead[0] = 1;
+            glBindTexture(GL_TEXTURE_2D, wrld.dead);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, (int)(qw::mouse_position.x*256/qw::width), (int)(qw::mouse_position.y*256/qw::height), 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, painted_dead);
+            // while((r=glGetError())) {std::cout << "d: " << r << " " << wrld.dead << std::endl;}
+        }
+
         glViewport(0, 0, qw::width, qw::height);
         glClearColor(0.5, 0.8, 1.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -154,5 +172,6 @@ int main(int args, char** argv) {
 
         qw::poll();
         frame++;
+        frame %= 1024;
     }
 }

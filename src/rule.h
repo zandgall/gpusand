@@ -11,7 +11,7 @@ namespace rules {
 	struct element {
 		glm::vec3 color, hsv_variance;
 		char key;
-	}
+	};
 
 	extern std::vector<element> elements;
 	extern std::map<std::string, unsigned int> properties;

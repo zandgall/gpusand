@@ -1,20 +1,27 @@
-element (air, passthrough) {
+air {
+	tags: passthrough
 	color: #9bd7e8
 	key: a
 }
 
-element (sand, solid, fallable, pileable) {
-	color: #f2d994, (5%, 5%, 10%)
+sand {
+	tags: solid, fallable, pileable
+	color: #f2d994
+	variance: 5%, 5%, 10%
 	key: s
 }
 
-element (stone, solid, fallable) {
-	color: #808080, (2%, 1%, 10%)
-	key: q
+stone {
+	tags: solid, fallable
+	color: #808080, 
+	variance: 2%, 1%, 10%
+	key: x
 }
 
-element (water, fallable, pileable, liquid) {
-	color: #0080ff, (10%, 10%, 5%)
+water {
+	tags: fallable, pileable, liquid
+	color: #0080ff
+	variance: 10%, 10%, 5%
 	key: w
 }
 
@@ -26,35 +33,34 @@ rule (f: fallable, 0: passthrough) {
 	f
 }
 
-rule (p: pileable, s: solid, 0: passthrough): x {
-	p
-	s 0	
+rule x (p: pileable, s: solid, 0: passthrough) {
+	p.
+	s0
 	=>
-	0
-	s p
+	0.
+	sp
 }
 
-rule (l: liquid, w: liquid, 0: passthrough): x {
-	l 0
-	l
+rule x (l: liquid, a: liquid, 0: passthrough) {
+	l0
+	a.
 	=>
-	0 l
-	l
+	0l
+	a.
 }
 
-rule (l: liquid, s: solid, 0: passthrough): x {
-	l 0
-	s
+rule x (l: liquid, s: solid, 0: passthrough) {
+	l0
+	s.
 	=>
-	0 l
-	s
+	0l
+	s.
 }
 
-rule (l: liquid, f: fallable): 20% {
+rule 20% (l: liquid, f: fallable) {
 	f
 	l
 	=>
 	l
 	f
 }
-
