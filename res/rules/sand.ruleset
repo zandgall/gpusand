@@ -1,3 +1,5 @@
+Define air, sand, stone, and water elements.
+
 air {
 	tags: passthrough
 	color: #9bd7e8
@@ -25,6 +27,8 @@ water {
 	key: w
 }
 
+
+Fallables fall:
 rule (f: fallable, 0: passthrough) {
 	f
 	0
@@ -33,6 +37,7 @@ rule (f: fallable, 0: passthrough) {
 	f
 }
 
+Pileables slide down slopes:
 rule x (p: pileable, s: solid, 0: passthrough) {
 	p.
 	s0
@@ -41,6 +46,7 @@ rule x (p: pileable, s: solid, 0: passthrough) {
 	sp
 }
 
+Liquids slide on other liquids:
 rule x (l: liquid, a: liquid, 0: passthrough) {
 	l0
 	a.
@@ -49,6 +55,7 @@ rule x (l: liquid, a: liquid, 0: passthrough) {
 	a.
 }
 
+Liquids slide on other solids:
 rule x (l: liquid, s: solid, 0: passthrough) {
 	l0
 	s.
@@ -57,6 +64,7 @@ rule x (l: liquid, s: solid, 0: passthrough) {
 	s.
 }
 
+Fallables sink in liquid:
 rule 20% (l: liquid, f: fallable) {
 	f
 	l

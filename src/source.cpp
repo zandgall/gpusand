@@ -2,7 +2,8 @@
 #include "qw/quickwork_io.h"
 #include "qw/quickwork_gl.h"
 #include "qw/quickwork_ui.h"
-#include "qw/quickwork_au.h"
+// #include "qw/quickwork_au.h"
+#include "rule.h"
 
 #include <vector>
 #include <iostream>
@@ -26,6 +27,9 @@ int main(int args, char** argv) {
         // return -1;
 
     qwio::load_shader_as("res/shaders/shader.shader", "default shader");
+    glUseProgram(qwio::get_loaded_shader("default shader"));
+    qwgl::uniform("text", 0);
+    qwgl::uniform("dead", 1);
     qwio::load_texture_as("res/image.png", "default image");
     qwio::load_font_as("res/fonts/robotomono.ttf", "roboto", 96);
     qwio::load_font_as("res/fonts/basicbit3.ttf", "basicbit", 96);
@@ -116,11 +120,8 @@ int main(int args, char** argv) {
     
     uint8_t noise_dat[1024*4];
     srand(time(NULL));
-    for(int i = 0; i < 1024 * 4; i++) {
+    for(int i = 0; i < 1024 * 4; i++)
         noise_dat[i] = rand()%256;
-        std::cout << (int)noise_dat[i] << " ";
-    }
-    std::cout << std::endl;
     while(glGetError());
     glGenTextures(1, &noise);
     glBindTexture(GL_TEXTURE_1D, noise);
@@ -129,12 +130,14 @@ int main(int args, char** argv) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindImageTexture(5, noise, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+
+    rules::loadRuleset("res/rules/sand.ruleset");
+
+    rules::applyRuleset();
     
     while(!qw::should_close) {
 
         if(qw::mouse_left && qw::mouse_position.x >= 0 && qw::mouse_position.x < qw::width && qw::mouse_position.y >= 0 && qw::mouse_position.y < qw::height) {
-            while(glGetError());
-            int r;
             glBindTexture(GL_TEXTURE_2D, wrld.color);
             uint8_t painted_color[4];
             painted_color[0] = 255;
@@ -146,7 +149,6 @@ int main(int args, char** argv) {
             painted_dead[0] = 1;
             glBindTexture(GL_TEXTURE_2D, wrld.dead);
             glTexSubImage2D(GL_TEXTURE_2D, 0, (int)(qw::mouse_position.x*256/qw::width), (int)(qw::mouse_position.y*256/qw::height), 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, painted_dead);
-            // while((r=glGetError())) {std::cout << "d: " << r << " " << wrld.dead << std::endl;}
         }
 
         glViewport(0, 0, qw::width, qw::height);
@@ -155,18 +157,21 @@ int main(int args, char** argv) {
         glDisable(GL_DEPTH_TEST);
 
         glUseProgram(qwio::get_loaded_compute("fallables fall"));
-        glDispatchCompute(256 / 32, 256 / 32, 1);
+        glDispatchCompute(256 / 16, 256 / 16, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
         glUseProgram(qwio::get_loaded_compute("piling"));
         qwgl::uniform("frame", frame);
-        glDispatchCompute(256 / 32, 256 / 32, 1);
+        glDispatchCompute(256 / 16, 256 / 16, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
         glUseProgram(qwio::get_loaded_shader("default shader"));
         qwgl::uniform("screenspace", glm::ortho<float>(0.f, qw::width, qw::height, 0.f, 0.f, qw::width*2));
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, wrld.color);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, wrld.dead);
+        glActiveTexture(GL_TEXTURE0);
         qwgl::uniform("transform", qwgl::rectangle(0, 0, qw::width, qw::height));
         qw::draw_square();
 

@@ -6,15 +6,15 @@
 
 namespace rules {
 
-	extern void loadRuleset(std::string file);
-
 	struct element {
 		glm::vec3 color, hsv_variance;
 		char key;
+		element() {
+			color = glm::vec3(0);
+			hsv_variance = glm::vec3(0);
+			key = 0;
+		}
 	};
-
-	extern std::vector<element> elements;
-	extern std::map<std::string, unsigned int> properties;
 
 	class rule {
 	private:
@@ -28,4 +28,9 @@ namespace rules {
 		void run();
 	};
 
+	extern std::vector<element> elements;
+	extern std::map<std::string, unsigned int> properties;
+	extern std::vector<rule> ruleset;
+	extern void loadRuleset(std::string file);
+	extern void applyRuleset();
 }
