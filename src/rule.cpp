@@ -3,6 +3,10 @@
 #include <iterator>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
+#include "qw/quickwork.h"
+#include "qw/quickwork_io.h"
+#include "qw/quickwork_gl.h"
 
 using namespace rules;
 
@@ -11,7 +15,6 @@ std::map<std::string, unsigned int> rules::properties = std::map<std::string, un
 std::vector<rule> rules::ruleset = std::vector<rule>();
 
 std::map parsed_tags = std::map<std::string, std::vector<unsigned int>>();
-std::vector rules_match = std::vector<std::vector<std::vector<std::string>>>(), rules_replace = std::vector<std::vector<std::vector<std::string>>>();
 
 std::regex item(R"((.*?)\s*\{\s*((?:\s.*?)*)\})");
 
@@ -28,6 +31,9 @@ layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 layout (rgba32f, binding = 0) uniform image2D world_color;
 layout (r32ui, binding = 1) uniform uimage2D world_dead;
 
+layout (location = 0) uniform int frame;
+layout (rgba32f, location = 1) uniform readonly image1D noise;
+
 bool match(uint a, readonly uimage1D img) {
 	for(int i = 0, n = imageSize(img); i < n; i++)
 		if(imageLoad(img, i).r == a)
@@ -38,10 +44,12 @@ bool match(uint a, readonly uimage1D img) {
 void parseRule(std::smatch groups) {
 	int index = rules::ruleset.size();
 	rule out;
+	bool mirrorX, mirrorY;
 	std::smatch flags;
 	std::string contents = groups[1].str();
 	std::regex_search(contents, flags, rule_flags);
-	out.setMirror((flags[1].str().find("x")!=std::string::npos), (flags[1].str().find("y")!=std::string::npos));
+	mirrorX = (flags[1].str().find("x")!=std::string::npos);
+	mirrorY = (flags[1].str().find("y")!=std::string::npos);
 	if(flags[1].str().find("%")!=std::string::npos) {
 		std::smatch chance;
 		contents = flags[1].str();
@@ -55,37 +63,82 @@ void parseRule(std::smatch groups) {
 		if(parsed_tags.find(identity)==parsed_tags.end())
 			parsed_tags[identity] = std::vector<unsigned int>();
 		parameters[flags[1].str()[0]] = identity;
+		if(std::find(out.used_identities.begin(), out.used_identities.end(), identity)==out.used_identities.end())
+			out.used_identities.push_back(identity);
 	}
 
 	contents = groups[2].str();
 	std::regex_search(contents, flags, rule_line);
-	int rule_width = flags[1].length(), rule_height = 0, n;
+	int rule_width = flags[1].length(), rule_height = 0, n = 0;
 
-	rules_match.push_back(std::vector<std::vector<std::string>>());
-	rules_replace.push_back(std::vector<std::vector<std::string>>());
-	std::vector<std::vector<std::vector<std::string>>> *block = &rules_match;
+	std::map match_positions = std::map<char, glm::ivec2>(), replace_positions = std::map<char, glm::ivec2>();
 	while(flags.size()>0) {
-		
-		int block_line = block->at(index).size();
-		
-		block->at(index).push_back(std::vector<std::string>());
 		if(flags[1].str()=="=>") {
 			rule_height = n;
-			block = &rules_replace;
-			contents=contents.substr(flags.length()+flags.position());
-			std::regex_search(contents, flags, rule_line);
-			continue;
+			break;
 		}
 
 		std::string identifiers = flags[1].str();
-
 		for(int i = 0; i < identifiers.length(); i++)
-			block->at(index)[block_line].push_back(parameters[identifiers[i]]);
+			if(identifiers[i] != '.')
+				match_positions[identifiers[i]] = glm::ivec2(i, n);
+		
+		contents=contents.substr(flags.length()+flags.position());
+		std::regex_search(contents, flags, rule_line);
+		n++;
+	}
+	n = 0;
+	contents=contents.substr(flags.length()+flags.position());
+	std::regex_search(contents, flags, rule_line);
+	while(flags.size()>0) {
+		std::string identifiers = flags[1].str();
+		for(int i = 0; i < identifiers.length(); i++)
+			if(identifiers[i]!='.')
+				replace_positions[identifiers[i]] = glm::ivec2(i,n);
 
 		contents=contents.substr(flags.length()+flags.position());
 		std::regex_search(contents, flags, rule_line);
 		n++;
 	}
+
+	std::stringstream shader_code;
+	shader_code << SHADER_HEADER << "\n";
+	n = 2;
+	for(int i = 0; i < out.used_identities.size(); i++) {
+		shader_code << "layout (r32ui, location = "<< (i+2) << ") uniform readonly uimage1D " << out.used_identities[i] << ";\n";
+	}
+	shader_code << "void main() {\n\tivec2 coord = ivec2(gl_GlobalInvocationID.xy);\n\tint xmir = ";
+	if(mirrorX) shader_code << "imageLoad(noise, frame).r < 0.5 ? 1 : -1;";
+	else shader_code << "1;";
+	shader_code << "\n\tint ymir = ";
+	if(mirrorY) shader_code << "imageLoad(noise, frame).r < 0.5 ? 1 : -1;";
+	else shader_code << "1;";
+	shader_code << "\n";
+	for(auto a = match_positions.begin(); a!=match_positions.end(); a++) {
+		shader_code << "\tuint _" << a->first << " = imageLoad(world_dead, coord+ivec2(";
+		shader_code << "xmir * " << a->second.x << ", ymir * " << a->second.y << ")).r;\n";
+		shader_code << "\tif(!match(_" << a->first << ", " << parameters[a->first] << "))\n\t\treturn;\n";
+	}
+	for(auto a = replace_positions.begin(); a!=replace_positions.end(); a++) {
+		shader_code << "\timageStore(world_dead, coord+ivec2(";
+		shader_code << "xmir * " << a->second.x << ", ymir * " << a->second.y << "), uvec4(_";
+		shader_code << a->first << ", 0, 0, 0));\n";
+
+		shader_code << "\tvec4 c"<<a->first << " = imageLoad(world_color, coord + ivec2(";
+		shader_code << "xmir * " << match_positions[a->first].x << ", ymir * " << match_positions[a->first].y << "));\n";
+		shader_code << "\timageStore(world_color, coord+ivec2(";
+		shader_code << "xmir * " << a->second.x << ", ymir * " << a->second.y << "), c" << a->first << ");\n";
+	}
+	shader_code << "}\n";
+
+	std::cout << shader_code.str(); 
+
+	out.compute_shader = glCreateProgram();
+	unsigned int cs = qwio::compileShader(GL_COMPUTE_SHADER, shader_code.str());
+	glAttachShader(out.compute_shader, cs);
+	glLinkProgram(out.compute_shader);
+	glValidateProgram(out.compute_shader);
+	glDeleteShader(cs);
 	rules::ruleset.push_back(out);
 }
 
@@ -180,7 +233,15 @@ void rules::loadRuleset(std::string file) {
 }
 
 void rules::applyRuleset() {
-
+	for(auto a = parsed_tags.begin(); a!=parsed_tags.end(); a++) {
+		properties[a->first] = 0;
+		glGenTextures(1, &properties[a->first]);
+		glBindTexture(GL_TEXTURE_1D, properties[a->first]);
+		glTexImage1D(GL_TEXTURE_1D, 0, GL_R32UI, a->second.size(), 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &a->second[0]);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	}
 }
 
 rule::rule() {
@@ -195,5 +256,11 @@ rule::~rule() {
 }
 
 void rule::run() {
-
+	glUseProgram(compute_shader);
+	for(int i = 0; i < used_identities.size(); i++)
+		glBindImageTexture(i+2, properties[used_identities[i]], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+	qwgl::uniform("frame", ran);
+	glDispatchCompute(256 / 16, 256 / 16, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	ran++;
 }

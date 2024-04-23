@@ -5,8 +5,8 @@ layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 layout (rgba32f, binding = 0) uniform image2D world_color;
 layout (r32ui, binding = 1) uniform uimage2D world_dead;
 
-layout (rgba32f, location = 1) uniform readonly image1D noise;
 layout (location = 0) uniform int frame;
+layout (rgba32f, location = 1) uniform readonly image1D noise;
 layout (r32ui, location = 2) uniform readonly uimage1D gravity_affected;
 layout (r32ui, location = 3) uniform readonly uimage1D non_solid;
 layout (r32ui, location = 4) uniform readonly uimage1D solid;

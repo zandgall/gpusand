@@ -11,7 +11,7 @@
 
 std::map<std::string, unsigned int> shader_cache = std::map<std::string, unsigned int>(), texture_cache = std::map<std::string, unsigned int>(), compute_cache = std::map<std::string, unsigned int>();
 
-unsigned int compileShader(unsigned int type, const std::string& source) {
+unsigned int qwio::compileShader(unsigned int type, const std::string& source) {
     unsigned int id = glCreateShader(type);
     const char* src = source.c_str();
     glShaderSource(id, 1, &src, nullptr);

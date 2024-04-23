@@ -20,8 +20,10 @@ namespace rules {
 	private:
 		bool mirrorX, mirrorY;
 		float chance = 1.0;
-		unsigned int compute_shader;
+		int ran = 0;
 	public:
+		unsigned int compute_shader;
+		std::vector<std::string> used_identities = std::vector<std::string>();
 		rule();
 		~rule();
 		void run();

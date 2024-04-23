@@ -92,9 +92,9 @@ int main(int args, char** argv) {
     glGenTextures(1, &gravity_affected);
     glBindTexture(GL_TEXTURE_1D, gravity_affected);
     glTexImage1D(GL_TEXTURE_1D, 0, GL_R32UI, 1, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, gravity_affected_dat);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindImageTexture(2, gravity_affected, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
 
     unsigned int non_solid_dat[1];
@@ -126,7 +126,7 @@ int main(int args, char** argv) {
     glGenTextures(1, &noise);
     glBindTexture(GL_TEXTURE_1D, noise);
     glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA32F, 1024, 0, GL_RGBA, GL_UNSIGNED_BYTE, noise_dat);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindImageTexture(5, noise, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
@@ -146,7 +146,7 @@ int main(int args, char** argv) {
             painted_color[3] = 255;
             glTexSubImage2D(GL_TEXTURE_2D, 0, (int)(qw::mouse_position.x*256/qw::width), (int)(qw::mouse_position.y*256/qw::height), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, painted_color);
             uint32_t painted_dead[1];
-            painted_dead[0] = 1;
+            painted_dead[0] = 2;
             glBindTexture(GL_TEXTURE_2D, wrld.dead);
             glTexSubImage2D(GL_TEXTURE_2D, 0, (int)(qw::mouse_position.x*256/qw::width), (int)(qw::mouse_position.y*256/qw::height), 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, painted_dead);
         }
@@ -156,14 +156,17 @@ int main(int args, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
 
-        glUseProgram(qwio::get_loaded_compute("fallables fall"));
-        glDispatchCompute(256 / 16, 256 / 16, 1);
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        // glUseProgram(qwio::get_loaded_compute("fallables fall"));
+        // glDispatchCompute(256 / 16, 256 / 16, 1);
+        // glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        glUseProgram(qwio::get_loaded_compute("piling"));
-        qwgl::uniform("frame", frame);
-        glDispatchCompute(256 / 16, 256 / 16, 1);
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        // glUseProgram(qwio::get_loaded_compute("piling"));
+        // qwgl::uniform("frame", frame);
+        // glDispatchCompute(256 / 16, 256 / 16, 1);
+        // glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        for(int i = 0; i < rules::ruleset.size(); i++)
+            rules::ruleset[i].run();
 
         glUseProgram(qwio::get_loaded_shader("default shader"));
         qwgl::uniform("screenspace", glm::ortho<float>(0.f, qw::width, qw::height, 0.f, 0.f, qw::width*2));
