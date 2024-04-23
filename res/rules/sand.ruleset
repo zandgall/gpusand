@@ -9,21 +9,21 @@ air {
 sand {
 	tags: solid, fallable, pileable
 	color: #f2d994
-	variance: 5%, 5%, 10%
+	variance: 5% 5% 10%
 	key: s
 }
 
 stone {
 	tags: solid, fallable
 	color: #808080, 
-	variance: 2%, 1%, 10%
+	variance: 2% 1% 10%
 	key: x
 }
 
 water {
 	tags: fallable, pileable, liquid
 	color: #0080ff
-	variance: 10%, 10%, 5%
+	variance: 10% 10% 5%
 	key: w
 }
 

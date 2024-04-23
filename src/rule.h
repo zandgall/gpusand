@@ -20,12 +20,13 @@ namespace rules {
 	private:
 		bool mirrorX, mirrorY;
 		float chance = 1.0;
-		std::map<std::string, std::string> input;
 		unsigned int compute_shader;
 	public:
 		rule();
 		~rule();
 		void run();
+		void setMirror(bool x, bool y) {mirrorX = x; mirrorY = y;}
+		void setChance(float chance) {this->chance = chance;}
 	};
 
 	extern std::vector<element> elements;
