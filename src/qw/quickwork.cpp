@@ -4,7 +4,7 @@
 
 // Local (file scope) variable definitions
 
-GLFWwindow* window;
+GLFWwindow* qw::window = nullptr;
 unsigned int square_vao = 0, square_vbo = 0, square_ebo = 0;
 void set_up_square() {
     // Square VAO definitions 
@@ -125,7 +125,6 @@ void APIENTRY _glDebugOutput(GLenum, GLenum, unsigned int, GLenum, GLsizei, cons
 void framebuffer_size_call(GLFWwindow* window, int width, int height);
 void cursor_pos_call(GLFWwindow* window, double x, double y);
 void mouse_button_call(GLFWwindow* window, int button, int action, int mods);
-void key_call(GLFWwindow* window, int key, int scancode, int action, int mods);
 void scroll_call(GLFWwindow* window, double x, double y);
 
 // qw external methods definitions
@@ -353,7 +352,7 @@ void mouse_button_call(GLFWwindow* window, int button, int action, int mods) {
     }
 }
 
-void key_call(GLFWwindow* window, int key, int scancode, int action, int mods) {
+void qw::key_call(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if(action == GLFW_PRESS) {
         std::string name = key_name_map[key];
         std::string mod_string = "";

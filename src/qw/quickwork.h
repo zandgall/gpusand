@@ -105,5 +105,10 @@ namespace qw {
 
     // Draw a string onto a predefined surface, using the given font. The size of the text will be stretched to fit the given surface. Surface is as if it's a transformation of a rectangle.
     extern void draw_string_on(std::string string, std::string font, glm::mat4 surface);
+
+    // Made extern to override key_call
+    extern GLFWwindow* window;
+    extern void key_call(GLFWwindow* window, int key, int scancode, int action, int mods);
+
 }
 #endif

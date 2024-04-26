@@ -26,14 +26,15 @@ namespace rules {
 		std::vector<std::string> used_identities = std::vector<std::string>();
 		rule();
 		~rule();
-		void run();
+		void run(unsigned int noise_texture);
 		void setMirror(bool x, bool y) {mirrorX = x; mirrorY = y;}
 		void setChance(float chance) {this->chance = chance;}
 	};
 
 	extern std::vector<element> elements;
 	extern std::map<std::string, unsigned int> properties;
+	extern std::map<char, unsigned int> element_keymap;
 	extern std::vector<rule> ruleset;
 	extern void loadRuleset(std::string file);
-	extern void applyRuleset();
+	extern void applyRuleset(unsigned int noise);
 }

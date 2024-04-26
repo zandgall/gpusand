@@ -4,6 +4,7 @@
 #include "qw/quickwork_ui.h"
 // #include "qw/quickwork_au.h"
 #include "rule.h"
+#include "color.h"
 
 #include <vector>
 #include <iostream>
@@ -15,11 +16,21 @@ struct world {
 
 unsigned int noise;
 
-int frame;
+int frame, selected_element = 0;
+
+void sand_key_call(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    qw::key_call(window, key, scancode, action, mods);
+    std::cout << key << " pressed: \'" << (char)key << "'\n";
+    if(rules::element_keymap.find((char)key)!=rules::element_keymap.end()) {
+        selected_element = rules::element_keymap[(char)key];
+        std::cout << "mapping " << selected_element << std::endl;
+    }
+}
 
 int main(int args, char** argv) {
     if (qw::start("More Sand", 1024, 1024))// If startup fails, exit with return code -1
         return -1;
+    glfwSetKeyCallback(qw::window, sand_key_call);
     // if (qwau::start()) // If audio fails, exit with return code -1
         // return -1;
 
@@ -35,10 +46,13 @@ int main(int args, char** argv) {
     glGenTextures(4, &wrld.color);
     glBindTexture(GL_TEXTURE_2D, wrld.color);
     unsigned char color_dat[256 * 256 * 4];
-    for(int i = 0; i < 256 * 256 * 4; i++) {
-        color_dat[i] = 255;
+    for(int i = 0; i < 256 * 256 * 4; i+=4) {
+        color_dat[i+0] = 155;
+        color_dat[i+1] = 215;
+        color_dat[i+2] = 232;
+        color_dat[i+3] = 255;
     }
-    for(int i = 0; i < 256; i++)
+    for(int i = 0; i < 256; i++) 
         color_dat[255*256*4 + i * 4 + 1] = 0;
     for(int i = 2; i < 32; i+=2) {
         color_dat[128 * 4 + i*256*4 + 0] = 255;
@@ -80,24 +94,25 @@ int main(int args, char** argv) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindImageTexture(5, noise, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+    // glBindImageTexture(5, noise, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
-    rules::loadRuleset("res/rules/test.ruleset");
+    rules::loadRuleset("res/rules/sand.ruleset");
 
-    rules::applyRuleset();
+    rules::applyRuleset(noise);
     
     while(!qw::should_close) {
 
         if(qw::mouse_left && qw::mouse_position.x >= 0 && qw::mouse_position.x < qw::width && qw::mouse_position.y >= 0 && qw::mouse_position.y < qw::height) {
             glBindTexture(GL_TEXTURE_2D, wrld.color);
+            glm::vec3 col = toRgb(toHsv(rules::elements[selected_element].color)+rules::elements[selected_element].hsv_variance*glm::vec3((float)rand()/RAND_MAX-0.5,(float)rand()/RAND_MAX-0.5,(float)rand()/RAND_MAX-0.5));
             uint8_t painted_color[4];
-            painted_color[0] = 255;
-            painted_color[1] = 0;
-            painted_color[2] = 0;
+            painted_color[0] = col.x*255;
+            painted_color[1] = col.y*255;
+            painted_color[2] = col.z*255;
             painted_color[3] = 255;
             glTexSubImage2D(GL_TEXTURE_2D, 0, (int)(qw::mouse_position.x*256/qw::width), (int)(qw::mouse_position.y*256/qw::height), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, painted_color);
             uint32_t painted_dead[1];
-            painted_dead[0] = 2;
+            painted_dead[0] = selected_element;
             glBindTexture(GL_TEXTURE_2D, wrld.dead);
             glTexSubImage2D(GL_TEXTURE_2D, 0, (int)(qw::mouse_position.x*256/qw::width), (int)(qw::mouse_position.y*256/qw::height), 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, painted_dead);
         }
@@ -117,7 +132,7 @@ int main(int args, char** argv) {
         // glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
         for(int i = 0; i < rules::ruleset.size(); i++)
-            rules::ruleset[i].run();
+            rules::ruleset[i].run(noise);
 
         glUseProgram(qwio::get_loaded_shader("default shader"));
         qwgl::uniform("screenspace", glm::ortho<float>(0.f, qw::width, qw::height, 0.f, 0.f, qw::width*2));
