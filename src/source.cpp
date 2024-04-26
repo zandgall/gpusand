@@ -13,9 +13,6 @@ struct world {
     unsigned int color, dead, alive, physic_props;
 } wrld;
 
-std::vector<unsigned int> rule_shaders;
-
-unsigned int gravity_affected, non_solid, solid;
 unsigned int noise;
 
 int frame;
@@ -33,21 +30,6 @@ int main(int args, char** argv) {
     qwio::load_texture_as("res/image.png", "default image");
     qwio::load_font_as("res/fonts/robotomono.ttf", "roboto", 96);
     qwio::load_font_as("res/fonts/basicbit3.ttf", "basicbit", 96);
-    qwio::load_compute_as("res/shaders/fallablesfall.shader", "fallables fall");
-    glUseProgram(qwio::get_loaded_compute("fallables fall"));
-    qwgl::uniform("world_color", 0);
-    qwgl::uniform("world_dead", 1);
-    qwgl::uniform("gravity_affected", 2);
-    qwgl::uniform("non_solid", 3);
-    qwio::load_compute_as("res/shaders/piling.shader", "piling");
-    glUseProgram(qwio::get_loaded_compute("piling"));
-    qwgl::uniform("world_color", 0);
-    qwgl::uniform("world_dead", 1);
-    qwgl::uniform("gravity_affected", 2);
-    qwgl::uniform("non_solid", 3);
-    qwgl::uniform("solid", 4);
-    qwgl::uniform("noise", 5);
-
     // Idea? // qwgl::create_texture_2D();
 
     glGenTextures(4, &wrld.color);
@@ -86,37 +68,6 @@ int main(int args, char** argv) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindImageTexture(1, wrld.dead, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
-
-    unsigned int gravity_affected_dat[1];
-    gravity_affected_dat[0] = 1;
-    glGenTextures(1, &gravity_affected);
-    glBindTexture(GL_TEXTURE_1D, gravity_affected);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_R32UI, 1, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, gravity_affected_dat);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glBindImageTexture(2, gravity_affected, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
-
-    unsigned int non_solid_dat[1];
-    non_solid_dat[0] = 0;
-    glGenTextures(1, &non_solid);
-    glBindTexture(GL_TEXTURE_1D, non_solid);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_R32UI, 1, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, non_solid_dat);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glBindImageTexture(3, non_solid, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
-
-    unsigned int solid_dat[2];
-    solid_dat[0] = 1;
-    solid_dat[1] = 2;
-    glGenTextures(1, &solid);
-    glBindTexture(GL_TEXTURE_1D, solid);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_R32UI, 1, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, solid_dat);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glBindImageTexture(4, solid, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
     
     uint8_t noise_dat[1024*4];
     srand(time(NULL));
@@ -131,7 +82,7 @@ int main(int args, char** argv) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindImageTexture(5, noise, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
-    rules::loadRuleset("res/rules/sand.ruleset");
+    rules::loadRuleset("res/rules/test.ruleset");
 
     rules::applyRuleset();
     
