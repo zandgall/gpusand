@@ -27,7 +27,7 @@ in vec2 uv;
 // Uniform inputs, determining whether the shader will use the given texture or not
 uniform vec4 color = vec4(1);
 uniform sampler2D text;
-//uniform usampler2D dead;
+uniform usampler2D dead;
 uniform bool textured = true;
 
 out vec4 out_color;
@@ -38,5 +38,5 @@ void main() {
 	else
 		out_color = color;
 	//out_color = vec4(0,0,0,1);
-	//out_color.y = float(texture(dead, uv).x);
+	out_color.y = float(texture(dead, uv).x);
 }

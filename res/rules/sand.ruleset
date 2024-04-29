@@ -14,8 +14,8 @@ sand {
 }
 
 stone {
-	tags: solid, fallable
-	color: #808080, 
+	tags: solid
+	color: #808080
 	variance: 2% 1% 10%
 	key: x
 }
@@ -65,7 +65,7 @@ rule x (l: liquid, s: solid, 0: passthrough) {
 }
 
 Fallables sink in liquid:
-rule 20% (l: liquid, f: fallable) {
+rule 1% (l: liquid, f: fallable) {
 	f
 	l
 	=>

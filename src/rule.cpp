@@ -29,8 +29,8 @@ R"(#version 460 compatibility
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout (rgba32f, binding = 0) uniform image2D world_color;
-layout (r32ui, binding = 1) uniform uimage2D world_dead;
+layout (rgba32f, binding = 0) uniform coherent volatile image2D world_color;
+layout (r32ui, binding = 1) uniform coherent volatile uimage2D world_dead;
 
 layout (location = 2) uniform int frame;
 layout (rgba32f, location = 3) uniform readonly image1D noise;
@@ -123,22 +123,26 @@ void parseRule(std::smatch groups) {
 	}
 	shader_code << "void main() {\n\tivec2 coord = ivec2(gl_GlobalInvocationID.xy);";
 	shader_code << "\n\tivec2 bounds = imageSize(world_dead), c = coord;";
-	if(mirrorX) shader_code << "\n\tint xmir = imageLoad(noise, frame).r < 0.5 ? 1 : -1;";
-	if(mirrorY) shader_code << "\n\tint ymir = imageLoad(noise, frame).r < 0.5 ? 1 : -1;";
+	if(mirrorX) shader_code << "\n\tint xmir = imageLoad(noise, (frame + c.x + c.y*bounds.x)%1024).r < 0.5 ? 1 : -1;";
+	if(mirrorY) shader_code << "\n\tint ymir = imageLoad(noise, (frame + c.y + c.x*bounds.y)%1024).r < 0.5 ? 1 : -1;";
 	shader_code << "\n";
 	for(auto a = match_positions.begin(); a!=match_positions.end(); a++) {
 		shader_code << "\tc = coord" << match_pos_str[a->first] << ";\n";
 		shader_code << "\tuint _" << a->first << " = imageLoad(world_dead, c).r;\n";
 		shader_code << "\tif(c.x >= bounds.x || c.y >= bounds.y || !match(_" << a->first << ", " << parameters[a->first] << "))\n\t\treturn;\n";
+		// shader_code << "\tuint _" << a->first << ""
 	}
 	for(auto a = replace_positions.begin(); a!=replace_positions.end(); a++)
-		shader_code << "\timageStore(world_dead, coord" << replace_pos_str[a->first] << ", uvec4(_" << a->first << ", 0, 0, 0));\n";
+		if(a->second!=match_positions[a->first])
+			shader_code << "\timageStore(world_dead, coord" << replace_pos_str[a->first] << ", uvec4(_" << a->first << ", 0, 0, 0));\n";
 	for(auto a = replace_positions.begin(); a!=replace_positions.end(); a++)
-		shader_code << "\tvec4 c"<<a->first << " = imageLoad(world_color, coord" << match_pos_str[a->first] << ");\n";
+		if(a->second!=match_positions[a->first])
+			shader_code << "\tvec4 c"<<a->first << " = imageLoad(world_color, coord" << match_pos_str[a->first] << ");\n";
 	for(auto a = replace_positions.begin(); a!=replace_positions.end(); a++)
-		shader_code << "\timageStore(world_color, coord" << replace_pos_str[a->first] << ", c" << a->first << ");\n";
+		if(a->second!=match_positions[a->first])
+			shader_code << "\timageStore(world_color, coord" << replace_pos_str[a->first] << ", c" << a->first << ");\n";
 
-	shader_code << "}\n";
+	shader_code << "\tmemoryBarrierShared();\n}\n";
 
 	std::cout << shader_code.str(); 
 
@@ -280,9 +284,10 @@ void rule::run(unsigned int noise_texture) {
 	for(int i = 0; i < used_identities.size(); i++)
 		glBindImageTexture(i+4, properties[used_identities[i]], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
 	qwgl::uniform("frame", ran++);
-	// glBindImageTexture(used_identities.size()+1, noise_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+
 	glBindImageTexture(3, noise_texture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 	glDispatchCompute(256 / 8, 256 / 8, 1);
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    
     ran %= 1024;
 }
