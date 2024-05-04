@@ -14,6 +14,7 @@
 struct world {
     unsigned int color, dead, alive, physic_props;
 } wrld;
+unsigned int world_dead_buff;
 
 unsigned int noise;
 
@@ -37,8 +38,8 @@ int main(int args, char** argv) {
 
     qwio::load_shader_as("res/shaders/shader.shader", "default shader");
     glUseProgram(qwio::get_loaded_shader("default shader"));
-    qwgl::uniform("text", 0);
-    qwgl::uniform("dead", 1);
+    qwgl::uniform("text", 1);
+    qwgl::uniform("dead", 0);
     qwio::load_texture_as("res/image.png", "default image");
     qwio::load_font_as("res/fonts/robotomono.ttf", "roboto", 96);
     qwio::load_font_as("res/fonts/basicbit3.ttf", "basicbit", 96);
@@ -99,11 +100,15 @@ int main(int args, char** argv) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     // glBindImageTexture(5, noise, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
+    glGenBuffers(1, &world_dead_buff);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, world_dead_buff);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 64*64*sizeof(unsigned int), dead_dat, GL_DYNAMIC_DRAW);
+
     glUseProgram(qwio::get_loaded_compute("fallables fall"));
-    qwgl::uniform("world_dead", 0);
+    qwgl::uniform("dead", 0);
     qwgl::uniform("world_color", 1);
-    qwgl::uniform("gravity_affected", 2);
-    qwgl::uniform("non_solid", 3);
+    qwgl::uniform("non_solid", 2);
+    qwgl::uniform("gravity_affected", 3);
 
     glUseProgram(qwio::get_loaded_compute("piling"));
     qwgl::uniform("world_color", 1);
@@ -118,8 +123,8 @@ int main(int args, char** argv) {
 
     rules::applyRuleset(noise);
 
-    glBindImageTexture(2, rules::properties["fallable"], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
-    glBindImageTexture(3, rules::properties["passthrough"], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+    glBindImageTexture(2, rules::properties["passthrough"], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+    glBindImageTexture(3, rules::properties["fallable"], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
     glBindImageTexture(4, rules::properties["solid"], 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
     glBindImageTexture(5, noise, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
@@ -145,24 +150,28 @@ int main(int args, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
 
-        glUseProgram(qwio::get_loaded_compute("fallables fall"));
-        glDispatchCompute(256 / 16, 256 / 16, 1);
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        // glUseProgram(qwio::get_loaded_compute("fallables fall"));
+        // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, world_dead_buff);
+        // glDispatchCompute(64 / 16, 64 / 16, 1);
+        // glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
         // glUseProgram(qwio::get_loaded_compute("piling"));
         // qwgl::uniform("frame", frame);
         // glDispatchCompute(256 / 16, 256 / 16, 1);
         // glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        // for(int i = 0; i < rules::ruleset.size(); i++)
-        //     rules::ruleset[i].run(noise);
+        for(int i = 0; i < rules::ruleset.size(); i++)
+            rules::ruleset[i].run(noise, world_dead_buff);
 
         glUseProgram(qwio::get_loaded_shader("default shader"));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, world_dead_buff);
+
         qwgl::uniform("screenspace", glm::ortho<float>(0.f, qw::width, qw::height, 0.f, 0.f, qw::width*2));
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, wrld.color);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, wrld.dead);
+        glBindTexture(GL_TEXTURE_2D, wrld.color);
+        // glActiveTexture(GL_TEXTURE1);
+        // glBindTexture(GL_TEXTURE_2D, wrld.dead);
         glActiveTexture(GL_TEXTURE0);
         qwgl::uniform("transform", qwgl::rectangle(0, 0, qw::width, qw::height));
         qw::draw_square();
@@ -176,6 +185,6 @@ int main(int args, char** argv) {
         do {
             auto stop = std::chrono::high_resolution_clock::now();
             duration = std::chrono::duration_cast<std::chrono::microseconds>(stop-start);
-        } while(duration.count()<100000);
+        } while(duration.count()<400000);
     }
 }

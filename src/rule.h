@@ -26,7 +26,7 @@ namespace rules {
 		std::vector<std::string> used_identities = std::vector<std::string>();
 		rule();
 		~rule();
-		void run(unsigned int noise_texture);
+		void run(unsigned int noise_texture, unsigned int buffer);
 		void setMirror(bool x, bool y) {mirrorX = x; mirrorY = y;}
 		void setChance(float chance) {this->chance = chance;}
 	};
